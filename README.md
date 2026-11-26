@@ -266,7 +266,7 @@ Tests run against an isolated in-memory SQLite database via `TestingConfig` (`ap
 
 Provides a real-time summary of device status, open incidents, simulated latency, uptime metrics, and monitoring insights.
 
-![Dashboard Overview](Screenshots/dashboard-overview.png.png)
+![Dashboard Overview](Screenshots/dashboard-overview.png)
 
 ---
 
@@ -274,7 +274,7 @@ Provides a real-time summary of device status, open incidents, simulated latency
 
 Manage network devices including routers, switches, firewalls, servers, and load balancers with filtering and search capabilities.
 
-![Device Inventory](Screenshots/device-inventory.png.png)
+![Device Inventory](Screenshots/device-inventory.png)
 
 ---
 
@@ -282,7 +282,7 @@ Manage network devices including routers, switches, firewalls, servers, and load
 
 Register new devices with hostname, IP address, device type, location, and operational status validation.
 
-![Add Device](Screenshots/add-device-form.png.png)
+![Add Device](Screenshots/add-device-form.png)
 
 ---
 
@@ -290,7 +290,7 @@ Register new devices with hostname, IP address, device type, location, and opera
 
 Monitor and manage network incidents with severity levels, status tracking, and device associations.
 
-![Incident Queue](Screenshots/incident-queue.png.png)
+![Incident Queue](Screenshots/incident-queue.png)
 
 ---
 
@@ -298,4 +298,4 @@ Monitor and manage network incidents with severity levels, status tracking, and 
 
 Log and triage incidents through the NOC workflow with priority classification and incident assignment.
 
-![Create Incident](Screenshots/new-incident.png.png)
+![Create Incident](Screenshots/new-incident.png)
