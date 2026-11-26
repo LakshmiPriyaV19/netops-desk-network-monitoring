@@ -258,8 +258,44 @@ Tests run against an isolated in-memory SQLite database via `TestingConfig` (`ap
 ---
 
 ## Screenshots
+---
 
-*(Add screenshots to `docs/screenshots/` after launching locally, e.g.:)*
-- `docs/screenshots/dashboard-overview.png` — KPI cards, Chart.js telemetry & simulation banner
-- `docs/screenshots/device-inventory.png` — Device management table & modal
-- `docs/screenshots/incident-queue.png` — Incident triage & resolution workflow
+## Screenshots
+
+### Dashboard Overview
+
+Provides a real-time summary of device status, open incidents, simulated latency, uptime metrics, and monitoring insights.
+
+![Dashboard Overview](Screenshots/dashboard-overview.png.png)
+
+---
+
+### Device Inventory
+
+Manage network devices including routers, switches, firewalls, servers, and load balancers with filtering and search capabilities.
+
+![Device Inventory](Screenshots/device-inventory.png.png)
+
+---
+
+### Add Device
+
+Register new devices with hostname, IP address, device type, location, and operational status validation.
+
+![Add Device](Screenshots/add-device-form.png.png)
+
+---
+
+### Incident Queue
+
+Monitor and manage network incidents with severity levels, status tracking, and device associations.
+
+![Incident Queue](Screenshots/incident-queue.png.png)
+
+---
+
+### Create Incident
+
+Log and triage incidents through the NOC workflow with priority classification and incident assignment.
+
+![Create Incident](Screenshots/new-incident.png.png)
