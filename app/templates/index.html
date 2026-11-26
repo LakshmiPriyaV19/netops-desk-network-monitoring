@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetOps Desk | Network Monitoring & Incident Management</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 & Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- Custom Navy/Blue NOC Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+<div class="netops-shell">
+    <!-- Sidebar Navigation -->
+    <aside class="netops-sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="bi bi-hdd-network-fill"></i>
+            </div>
+            <div>
+                <div class="brand-title">NetOps Desk</div>
+                <div class="brand-subtitle">NOC Operations Console</div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="nav-section-label">Workspace</div>
+            <a href="#overview-section" class="nav-link active" data-section="overview-section">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard Overview</span>
+            </a>
+            <a href="#charts-section" class="nav-link" data-section="charts-section">
+                <i class="bi bi-bar-chart-line"></i>
+                <span>Health &amp; Telemetry</span>
+            </a>
+            <a href="#devices-section" class="nav-link" data-section="devices-section">
+                <i class="bi bi-router"></i>
+                <span>Device Inventory</span>
+                <span class="nav-badge" id="sidebarDeviceCount">0</span>
+            </a>
+            <a href="#incidents-section" class="nav-link" data-section="incidents-section">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>Incident Queue</span>
+                <span class="nav-badge nav-badge-alert" id="sidebarIncidentCount">0</span>
+            </a>
+
+            <div class="nav-section-label mt-4">Quick Actions</div>
+            <button type="button" class="sidebar-action-btn" id="btnSidebarAddDevice">
+                <i class="bi bi-plus-circle"></i>
+                <span>Register Device</span>
+            </button>
+            <button type="button" class="sidebar-action-btn" id="btnSidebarAddIncident">
+                <i class="bi bi-shield-exclamation"></i>
+                <span>Log Incident</span>
+            </button>
+            <button type="button" class="sidebar-action-btn" id="btnSidebarSeedDemo">
+                <i class="bi bi-database-add"></i>
+                <span>Seed Demo Topology</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sim-indicator">
+                <span class="pulse-dot"></span>
+                <div>
+                    <div class="sim-title">Simulated Monitor</div>
+                    <div class="sim-meta" id="sidebarSimMeta">Python State Engine</div>
+                </div>
+            </div>
+            <p class="sim-disclaimer mb-0">
+                All device status checks, latency, and uptime figures are simulated for demonstration.
+            </p>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div class="sidebar-backdrop d-lg-none" id="sidebarBackdrop"></div>
+
+    <!-- Main Workspace -->
+    <div class="netops-main">
+        <!-- Top Bar -->
+        <header class="netops-topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-outline-navy d-lg-none" id="btnToggleSidebar" aria-label="Toggle Menu">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <div>
+                    <h1 class="page-title mb-0">Network Operations Dashboard</h1>
+                    <div class="page-subtitle">
+                        <span class="sim-pill">
+                            <i class="bi bi-cpu me-1"></i>Simulated Monitoring Active
+                        </span>
+                        <span class="ms-2 text-muted small" id="lastUpdatedLabel">Last synced: --</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="form-check form-switch me-2 d-flex align-items-center gap-2 mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="autoRefreshToggle" checked>
+                    <label class="form-check-label small fw-medium text-navy" for="autoRefreshToggle">
+                        Auto-Sync (15s)
+                    </label>
+                </div>
+                <button class="btn btn-subtle-blue btn-sm" id="btnRunSimulation">
+                    <i class="bi bi-activity me-1"></i>Run Simulated Check
+                </button>
+                <button class="btn btn-navy btn-sm" id="btnOpenDeviceModal">
+                    <i class="bi bi-plus-lg me-1"></i>Add Device
+                </button>
+                <button class="btn btn-primary btn-sm" id="btnOpenIncidentModal">
+                    <i class="bi bi-exclamation-circle me-1"></i>New Incident
+                </button>
+            </div>
+        </header>
+
+        <!-- Content Container -->
+        <main class="netops-content">
+            <!-- Explicit Simulation Notice Banner -->
+            <div class="sim-notice-banner mb-4" role="status">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <div>
+                    <strong>Simulation Notice:</strong> Health statuses, latency (ms), and uptime (%) displayed below are
+                    <strong>simulated by Python</strong> on a periodic schedule and on manual trigger. No live ICMP/SNMP network probes are sent.
+                </div>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <section id="overview-section" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Total Devices</span>
+                                <span class="kpi-icon bg-navy-soft text-navy"><i class="bi bi-hdd-stack"></i></span>
+                            </div>
+                            <div class="kpi-value" id="kpiTotalDevices">0</div>
+                            <div class="kpi-foot">Registered nodes</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card kpi-online">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Online</span>
+                                <span class="kpi-icon bg-success-soft text-success"><i class="bi bi-check-circle-fill"></i></span>
+                            </div>
+                            <div class="kpi-value text-success" id="kpiOnlineDevices">0</div>
+                            <div class="kpi-foot">Healthy (simulated)</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card kpi-warning">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Warning</span>
+                                <span class="kpi-icon bg-warning-soft text-warning"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                            </div>
+                            <div class="kpi-value text-warning-dark" id="kpiWarningDevices">0</div>
+                            <div class="kpi-foot">High latency (sim)</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card kpi-offline">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Offline</span>
+                                <span class="kpi-icon bg-danger-soft text-danger"><i class="bi bi-x-octagon-fill"></i></span>
+                            </div>
+                            <div class="kpi-value text-danger" id="kpiOfflineDevices">0</div>
+                            <div class="kpi-foot">Unreachable (sim)</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card kpi-incidents">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Open Incidents</span>
+                                <span class="kpi-icon bg-primary-soft text-primary"><i class="bi bi-ticket-detailed-fill"></i></span>
+                            </div>
+                            <div class="kpi-value text-primary" id="kpiOpenIncidents">0</div>
+                            <div class="kpi-foot" id="kpiIncidentSubtext">0 resolved</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-4 col-xl-2">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <span class="kpi-label">Avg Latency (Sim)</span>
+                                <span class="kpi-icon bg-navy-soft text-navy"><i class="bi bi-speedometer"></i></span>
+                            </div>
+                            <div class="kpi-value" id="kpiAvgLatency">--</div>
+                            <div class="kpi-foot" id="kpiAvgUptime">Avg Uptime: --% (sim)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Charts Section -->
+            <section id="charts-section" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-lg-4">
+                        <div class="panel-card h-100">
+                            <div class="panel-header">
+                                <div>
+                                    <h2 class="panel-title">Device Health Overview</h2>
+                                    <p class="panel-subtitle">Simulated operational state distribution</p>
+                                </div>
+                                <span class="badge badge-sim">Simulated</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="deviceHealthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="panel-card h-100">
+                            <div class="panel-header">
+                                <div>
+                                    <h2 class="panel-title">Incident Severity Breakdown</h2>
+                                    <p class="panel-subtitle">All logged incidents by priority</p>
+                                </div>
+                                <span class="badge bg-subtle-blue text-navy">Severity</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="incidentSeverityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="panel-card h-100">
+                            <div class="panel-header">
+                                <div>
+                                    <h2 class="panel-title">Device Latency (Simulated)</h2>
+                                    <p class="panel-subtitle">Latest simulated RTT in milliseconds</p>
+                                </div>
+                                <span class="badge badge-sim">Sim ms</span>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="latencyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Device Inventory Table -->
+            <section id="devices-section" class="mb-4">
+                <div class="panel-card">
+                    <div class="panel-header flex-wrap gap-3">
+                        <div>
+                            <h2 class="panel-title">Network Device Status</h2>
+                            <p class="panel-subtitle">Manage routers, switches, firewalls, and simulated health telemetry</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <div class="input-group input-group-sm" style="width: 220px;">
+                                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="deviceSearchInput" placeholder="Search name, IP, location...">
+                            </div>
+                            <select class="form-select form-select-sm" id="deviceStatusFilter" style="width: 140px;">
+                                <option value="">All Statuses</option>
+                                <option value="ONLINE">ONLINE</option>
+                                <option value="WARNING">WARNING</option>
+                                <option value="OFFLINE">OFFLINE</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="deviceTypeFilter" style="width: 150px;">
+                                <option value="">All Types</option>
+                                <option value="Router">Router</option>
+                                <option value="Switch">Switch</option>
+                                <option value="Firewall">Firewall</option>
+                                <option value="Access Point">Access Point</option>
+                                <option value="Server">Server</option>
+                                <option value="Load Balancer">Load Balancer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle netops-table mb-0">
+                            <thead>
+                            <tr>
+                                <th>Device Name</th>
+                                <th>IP Address</th>
+                                <th>Type</th>
+                                <th>Location</th>
+                                <th>Status <small class="fw-normal">(Sim)</small></th>
+                                <th>Latency <small class="fw-normal">(Sim)</small></th>
+                                <th>Uptime <small class="fw-normal">(Sim)</small></th>
+                                <th>Last Checked</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="devicesTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">Loading devices...</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Incident Management Table -->
+            <section id="incidents-section" class="mb-4">
+                <div class="panel-card">
+                    <div class="panel-header flex-wrap gap-3">
+                        <div>
+                            <h2 class="panel-title">Incident Management</h2>
+                            <p class="panel-subtitle">Track, triage, and resolve incidents assigned to network devices</p>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select class="form-select form-select-sm" id="incidentStatusFilter" style="width: 150px;">
+                                <option value="">All Statuses</option>
+                                <option value="OPEN">OPEN</option>
+                                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                                <option value="RESOLVED">RESOLVED</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="incidentPriorityFilter" style="width: 150px;">
+                                <option value="">All Priorities</option>
+                                <option value="CRITICAL">CRITICAL</option>
+                                <option value="HIGH">HIGH</option>
+                                <option value="MEDIUM">MEDIUM</option>
+                                <option value="LOW">LOW</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle netops-table mb-0">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Incident Summary</th>
+                                <th>Assigned Device</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="incidentsTableBody">
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Loading incidents...</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<!-- Add / Edit Device Modal -->
+<div class="modal fade" id="deviceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="deviceForm">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title" id="deviceModalTitle">Register Network Device</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="deviceIdField">
+                <div class="alert alert-danger d-none py-2 small" id="deviceFormError"></div>
+
+                <div class="mb-3">
+                    <label for="deviceNameField" class="form-label fw-medium">Device Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="deviceNameField" placeholder="e.g. palc-core-rtr-02" required maxlength="100">
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="deviceIpField" class="form-label fw-medium">IP Address <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control font-monospace" id="deviceIpField" placeholder="e.g. 10.10.0.12" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="deviceTypeField" class="form-label fw-medium">Device Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="deviceTypeField" required>
+                            <option value="Router">Router</option>
+                            <option value="Switch">Switch</option>
+                            <option value="Firewall">Firewall</option>
+                            <option value="Access Point">Access Point</option>
+                            <option value="Server">Server</option>
+                            <option value="Load Balancer">Load Balancer</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label for="deviceLocationField" class="form-label fw-medium">Location <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="deviceLocationField" placeholder="e.g. Bengaluru DC-1 / Rack B2" required maxlength="120">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="deviceStatusField" class="form-label fw-medium">Initial Status</label>
+                        <select class="form-select" id="deviceStatusField">
+                            <option value="ONLINE">ONLINE</option>
+                            <option value="WARNING">WARNING</option>
+                            <option value="OFFLINE">OFFLINE</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-navy" id="deviceSaveBtn">Save Device</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add / Edit Incident Modal -->
+<div class="modal fade" id="incidentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" id="incidentForm">
+            <div class="modal-header bg-navy text-white">
+                <h5 class="modal-title" id="incidentModalTitle">Log Network Incident</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="incidentIdField">
+                <div class="alert alert-danger d-none py-2 small" id="incidentFormError"></div>
+
+                <div class="mb-3">
+                    <label for="incidentDeviceField" class="form-label fw-medium">Assigned Device <span class="text-danger">*</span></label>
+                    <select class="form-select" id="incidentDeviceField" required></select>
+                </div>
+                <div class="mb-3">
+                    <label for="incidentTitleField" class="form-label fw-medium">Incident Title <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="incidentTitleField" placeholder="e.g. BGP Neighbor Down on Gi0/1" required maxlength="150">
+                </div>
+                <div class="mb-3">
+                    <label for="incidentDescField" class="form-label fw-medium">Description</label>
+                    <textarea class="form-control" id="incidentDescField" rows="3" placeholder="Diagnostics, impact, and triage notes..."></textarea>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="incidentPriorityField" class="form-label fw-medium">Priority</label>
+                        <select class="form-select" id="incidentPriorityField">
+                            <option value="LOW">LOW</option>
+                            <option value="MEDIUM" selected>MEDIUM</option>
+                            <option value="HIGH">HIGH</option>
+                            <option value="CRITICAL">CRITICAL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="incidentStatusField" class="form-label fw-medium">Status</label>
+                        <select class="form-select" id="incidentStatusField">
+                            <option value="OPEN" selected>OPEN</option>
+                            <option value="IN_PROGRESS">IN_PROGRESS</option>
+                            <option value="RESOLVED">RESOLVED</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="incidentSaveBtn">Save Incident</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-navy text-white">
+                <h6 class="modal-title">Confirm Deletion</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body small" id="confirmDeleteBody">
+                Are you sure you want to delete this item?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+<!-- Bootstrap 5 & Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
